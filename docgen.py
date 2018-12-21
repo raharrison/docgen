@@ -1,14 +1,16 @@
 from markdown2 import Markdown
 
+TEMPLATE_DIR = "template"
+
 
 def read_base_template():
-    with open('template/base.html', 'r') as template:
+    with open(f"{TEMPLATE_DIR}/base.html", 'r') as template:
         return template.read().strip()
 
 
 def create_styles():
     styles = ""
-    css_files = ["template/styles.css", "template/highlight.css"]
+    css_files = [f"{TEMPLATE_DIR}/styles.css", f"{TEMPLATE_DIR}/highlight.css"]
     for css in css_files:
         with open(css, 'r') as css_file:
             styles += css_file.read().strip()
