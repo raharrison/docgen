@@ -1,4 +1,5 @@
 import os
+import shutil
 from markdown2 import Markdown
 
 TEMPLATE_DIR = "template"
@@ -20,6 +21,10 @@ def create_styles():
         with open(css, 'r') as css_file:
             styles += css_file.read().strip()
     return styles
+
+
+def cleanup():
+    shutil.rmtree(OUTPUT_DIR)
 
 
 # TODO: Replace <title> with content filename
@@ -62,6 +67,11 @@ def generate_docs(raw_docs):
 
 if __name__ == "__main__":
 
+    cleanup()
+    print("Cleaned up output directory")
+
     raw_docs = walk_raw_docs()
+    print(f"Found {len(raw_docs)} files to generate")
 
     generate_docs(raw_docs)
+    print("Generated documents")
