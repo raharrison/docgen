@@ -18,15 +18,18 @@ class Document():
     markdown: str
 
     def __init__(self, src_filename, src_path, dir_path):
-        self.src_filename = src_filename
-        self.src_path = src_path
-        (name, extension) = os.path.splitext(src_filename)
-        self.name = name.replace(" ", "-").lower()
-        self.extension = extension
-        self.dir_path = dir_path
+        self.src_filename = src_filename.strip()
+        self.src_path = src_path.strip()
+        (name, extension) = os.path.splitext(self.src_filename)
+        self.name = name.replace(" ", "-").lower().strip()
+        self.extension = extension.strip()
+        self.dir_path = dir_path.strip()
 
     def is_doc(self) -> bool:
         return self.extension == ".md"
+
+    def title(self) -> str:
+        return self.name.replace("-", " ").title()
 
 
 def read_base_template() -> str:
@@ -48,9 +51,10 @@ def cleanup():
         shutil.rmtree(OUTPUT_DIR)
 
 
-# TODO: Replace <title> with content filename
-def build_doc_page(base, styles, markdown) -> str:
-    withStyles = base.replace("{{ styles }}", styles)
+def build_doc_page(base, styles, title, markdown) -> str:
+    withTitle = base.replace("{{ title }}", title)
+    withStyles = withTitle.replace("{{ styles }}", styles)
+
     content = markdowner.convert(markdown)
     withContent = withStyles.replace("{{ content }}", content)
     return withContent
@@ -84,7 +88,7 @@ def generate_docs(raw_docs):
             os.makedirs(doc_dir_path)
 
         if doc.is_doc():
-            page = build_doc_page(base, styles, doc.markdown)
+            page = build_doc_page(base, styles, doc.title(), doc.markdown)
 
             doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
 
