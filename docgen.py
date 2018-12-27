@@ -1,12 +1,14 @@
 import os
 import shutil
 from markdown2 import Markdown
+from pybars import Compiler
 
 TEMPLATE_DIR = "template"
 OUTPUT_DIR = "docs"
 RAW_DIR = "raw"
 
 markdowner = Markdown(extras=["tables", "fenced-code-blocks"])
+compiler = Compiler()
 
 
 class Document():
@@ -33,8 +35,9 @@ class Document():
 
 
 def read_base_template() -> str:
-    with open(f"{TEMPLATE_DIR}/base.html", 'r') as template:
-        return template.read().strip()
+    with open(f"{TEMPLATE_DIR}/base.html", 'r') as template_file:
+        template = template_file.read().strip()
+        return compiler.compile(template)
 
 
 def create_styles() -> str:
@@ -52,12 +55,9 @@ def cleanup():
 
 
 def build_doc_page(base, styles, title, markdown) -> str:
-    withTitle = base.replace("{{ title }}", title)
-    withStyles = withTitle.replace("{{ styles }}", styles)
-
     content = markdowner.convert(markdown)
-    withContent = withStyles.replace("{{ content }}", content)
-    return withContent
+    output = base({"title": title, "styles": styles, "content": content})
+    return output
 
 
 def walk_raw_docs() -> [[Document]]:
