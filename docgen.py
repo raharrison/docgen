@@ -60,9 +60,10 @@ def build_doc_page(base, styles, title, markdown) -> str:
     return withContent
 
 
-def walk_raw_docs() -> [Document]:
-    docs = []
+def walk_raw_docs() -> [[Document]]:
+    docs_by_dir = []
     for (root, _, filenames) in os.walk(RAW_DIR):
+        dir_docs = []
         for filename in filenames:
             dirpath = os.path.relpath(root, RAW_DIR).replace(".", "")
             raw_path = os.path.join(root, filename)
@@ -73,32 +74,34 @@ def walk_raw_docs() -> [Document]:
                     markdown = doc_file.read().strip()
                     doc.markdown = markdown
 
-            docs.append(doc)
+            dir_docs.append(doc)
+        docs_by_dir.append(dir_docs)
 
-    return docs
+    return docs_by_dir
 
 
 def generate_docs(raw_docs):
     base = read_base_template()
     styles = create_styles()
 
-    for doc in raw_docs:
-        doc_dir_path = os.path.join(OUTPUT_DIR, doc.dir_path)
-        if not os.path.exists(doc_dir_path):
-            os.makedirs(doc_dir_path)
+    for directory in raw_docs:
+        for doc in directory:
+            doc_dir_path = os.path.join(OUTPUT_DIR, doc.dir_path)
+            if not os.path.exists(doc_dir_path):
+                os.makedirs(doc_dir_path)
 
-        if doc.is_doc():
-            page = build_doc_page(base, styles, doc.title(), doc.markdown)
+            if doc.is_doc():
+                page = build_doc_page(base, styles, doc.title(), doc.markdown)
 
-            doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
+                doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
 
-            with open(doc_path, 'w') as output_file:
-                output_file.write(page)
-        else:
-            # raw file copy
-            src = doc.src_path
-            target = os.path.join(doc_dir_path, doc.src_filename)
-            shutil.copyfile(src, target)
+                with open(doc_path, 'w') as output_file:
+                    output_file.write(page)
+            else:
+                # raw file copy
+                src = doc.src_path
+                target = os.path.join(doc_dir_path, doc.src_filename)
+                shutil.copyfile(src, target)
 
 
 if __name__ == "__main__":
