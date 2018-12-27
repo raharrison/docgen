@@ -54,10 +54,26 @@ def cleanup():
         shutil.rmtree(OUTPUT_DIR)
 
 
-def build_doc_page(base, styles, title, markdown) -> str:
-    content = markdowner.convert(markdown)
-    output = base({"title": title, "styles": styles, "content": content})
+def build_doc_page(base, styles, contents, doc) -> str:
+    content = markdowner.convert(doc.markdown)
+    output = base({
+        "title": doc.title(),
+        "styles": styles,
+        "contents": contents,
+        "content": content
+    })
     return output
+
+
+def generate_contents(docs):
+    contents_docs = [{
+        "title": doc.title(),
+        "url": f"{doc.name}.html"
+    } for doc in docs]
+    with open(f"{TEMPLATE_DIR}/contents.html", 'r') as template_file:
+        template_raw = template_file.read().strip()
+        template = compiler.compile(template_raw)
+    return template({"docs": contents_docs})
 
 
 def walk_raw_docs() -> [[Document]]:
@@ -85,13 +101,14 @@ def generate_docs(raw_docs):
     styles = create_styles()
 
     for directory in raw_docs:
+        contents = generate_contents(directory)
         for doc in directory:
             doc_dir_path = os.path.join(OUTPUT_DIR, doc.dir_path)
             if not os.path.exists(doc_dir_path):
                 os.makedirs(doc_dir_path)
 
             if doc.is_doc():
-                page = build_doc_page(base, styles, doc.title(), doc.markdown)
+                page = build_doc_page(base, styles, contents, doc)
 
                 doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
 
