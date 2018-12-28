@@ -12,26 +12,18 @@ compiler = Compiler()
 
 
 class Document():
-    src_filename: str  # overview.md
-    src_path: str  # raw/technical/tools/overview.md
-    name: str  # overview
-    extension: str  # .md
-    dir_path: str  # technical/tools
-    markdown: str
-
     def __init__(self, src_filename, src_path, dir_path):
-        self.src_filename = src_filename.strip()
-        self.src_path = src_path.strip()
+        self.src_filename = src_filename.strip()  # overview.md
+        self.src_path = src_path.strip()  # raw/technical/tools/overview.md
         (name, extension) = os.path.splitext(self.src_filename)
-        self.name = name.replace(" ", "-").lower().strip()
-        self.extension = extension.strip()
-        self.dir_path = dir_path.strip()
+        self.name = name.replace(" ", "-").lower().strip()  # overview
+        self.extension = extension.strip()  # .md
+        self.dir_path = dir_path.strip()  # technical/tools
+
+        self.title = self.name.replace("-", "").title()
 
     def is_doc(self) -> bool:
         return self.extension == ".md"
-
-    def title(self) -> str:
-        return self.name.replace("-", " ").title()
 
 
 def create_template(name):
@@ -57,7 +49,7 @@ def cleanup():
 def build_doc_page(base, styles, contents, doc) -> str:
     content = markdowner.convert(doc.markdown)
     output = base({
-        "title": doc.title(),
+        "title": doc.title,
         "styles": styles,
         "contents": contents,
         "content": content
@@ -67,7 +59,7 @@ def build_doc_page(base, styles, contents, doc) -> str:
 
 def generate_contents(docs):
     contents_docs = [{
-        "title": doc.title(),
+        "title": doc.title,
         "url": f"{doc.name}.html"
     } for doc in docs]
     template = create_template("contents.html")
