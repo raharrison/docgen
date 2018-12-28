@@ -20,7 +20,7 @@ class Document():
         self.extension = extension.strip()  # .md
         self.dir_path = dir_path.replace("\\", "/").strip()  # technical/tools
 
-        self.title = self.name.replace("-", "").title()  # Overview
+        self.title = self.name.replace("-", " ").title()  # Overview
         self.long_name = self.dir_path.replace("/", " ").title().replace(
             " ", " / ") + " / " + self.title  # Technical / Tools / Overview
 
@@ -114,6 +114,20 @@ def generate_docs(raw_docs):
                 shutil.copyfile(src, target)
 
 
+def generate_index(docs):
+    template = create_template("contents.html")
+    flat = [item for sublist in docs for item in sublist]
+    pages = [{
+        "title": doc.long_name,
+        "url": doc.dir_path + "/" + f"{doc.name}.html"
+    } for doc in flat]
+
+    index = template({"docs": pages})
+
+    with open(os.path.join(OUTPUT_DIR, "index.html"), 'w') as output_file:
+        output_file.write(index)
+
+
 if __name__ == "__main__":
 
     cleanup()
@@ -123,4 +137,5 @@ if __name__ == "__main__":
     print(f"Found {len(raw_docs)} files to generate")
 
     generate_docs(raw_docs)
+    generate_index(raw_docs)
     print("All documents generated")
