@@ -34,8 +34,8 @@ class Document():
         return self.name.replace("-", " ").title()
 
 
-def read_base_template() -> str:
-    with open(f"{TEMPLATE_DIR}/base.html", 'r') as template_file:
+def create_template(name):
+    with open(f"{TEMPLATE_DIR}/{name}", 'r') as template_file:
         template = template_file.read().strip()
         return compiler.compile(template)
 
@@ -70,9 +70,7 @@ def generate_contents(docs):
         "title": doc.title(),
         "url": f"{doc.name}.html"
     } for doc in docs]
-    with open(f"{TEMPLATE_DIR}/contents.html", 'r') as template_file:
-        template_raw = template_file.read().strip()
-        template = compiler.compile(template_raw)
+    template = create_template("contents.html")
     return template({"docs": contents_docs})
 
 
@@ -97,7 +95,7 @@ def walk_raw_docs() -> [[Document]]:
 
 
 def generate_docs(raw_docs):
-    base = read_base_template()
+    base = create_template("base.html")
     styles = create_styles()
 
     for directory in raw_docs:
