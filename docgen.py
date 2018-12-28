@@ -64,7 +64,7 @@ def generate_contents(docs):
     contents_docs = [{
         "title": doc.title,
         "url": f"{doc.name}.html"
-    } for doc in docs]
+    } for doc in docs if doc.is_doc()]
     template = create_template("contents.html")
     return template({"docs": contents_docs})
 
@@ -120,7 +120,7 @@ def generate_index(docs):
     pages = [{
         "title": doc.long_name,
         "url": doc.dir_path + "/" + f"{doc.name}.html"
-    } for doc in flat]
+    } for doc in flat if doc.is_doc()]
 
     index = index_template({"docs": pages})
 
