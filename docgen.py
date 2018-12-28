@@ -18,9 +18,11 @@ class Document():
         (name, extension) = os.path.splitext(self.src_filename)
         self.name = name.replace(" ", "-").lower().strip()  # overview
         self.extension = extension.strip()  # .md
-        self.dir_path = dir_path.strip()  # technical/tools
+        self.dir_path = dir_path.replace("\\", "/").strip()  # technical/tools
 
-        self.title = self.name.replace("-", "").title()
+        self.title = self.name.replace("-", "").title()  # Overview
+        self.long_name = self.dir_path.replace("/", " ").title().replace(
+            " ", " / ") + " / " + self.title  # Technical / Tools / Overview
 
     def is_doc(self) -> bool:
         return self.extension == ".md"
@@ -51,6 +53,7 @@ def build_doc_page(base, styles, contents, doc) -> str:
     output = base({
         "title": doc.title,
         "styles": styles,
+        "name": doc.long_name,
         "contents": contents,
         "content": content
     })
