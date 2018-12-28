@@ -115,17 +115,27 @@ def generate_docs(raw_docs):
 
 
 def generate_index(docs):
-    template = create_template("contents.html")
+    index_template = create_template("contents.html")
     flat = [item for sublist in docs for item in sublist]
     pages = [{
         "title": doc.long_name,
         "url": doc.dir_path + "/" + f"{doc.name}.html"
     } for doc in flat]
 
-    index = template({"docs": pages})
+    index = index_template({"docs": pages})
+
+    base = create_template("base.html")
+    styles = create_styles()
+
+    output = base({
+        "title": "Index",
+        "styles": styles,
+        "name": "Index",
+        "content": index
+    })
 
     with open(os.path.join(OUTPUT_DIR, "index.html"), 'w') as output_file:
-        output_file.write(index)
+        output_file.write(output)
 
 
 if __name__ == "__main__":
