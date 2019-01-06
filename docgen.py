@@ -12,7 +12,7 @@ markdowner = Markdown(extras=["tables", "fenced-code-blocks"])
 templates = {}  # cache for templates
 
 
-class Document():
+class Doc():
     def __init__(self, src_filename, src_path, dir_path):
         self.src_filename = src_filename.strip()  # overview.md
         self.src_path = src_path.strip()  # raw/technical/tools/overview.md
@@ -27,6 +27,18 @@ class Document():
 
     def is_doc(self) -> bool:
         return self.extension == ".md"
+
+
+class DocSet():
+    def __init__(self, dir_path: str, docs: [Doc]):
+        self.dir_path = dir_path
+        self.docs = docs
+        self.doc_count = len(self.docs)
+
+    def to_url(self):
+        if self.dir_path != "":
+            return self.dir_path + "/"
+        return self.dir_path
 
 
 def render_template(template, params) -> str:
@@ -51,7 +63,7 @@ def cleanup():
         shutil.rmtree(OUTPUT_DIR)
 
 
-def build_doc_page(contents, doc) -> str:
+def build_doc_page(contents: str, doc: Doc) -> str:
     content = markdowner.convert(doc.markdown)
     return render_template(
         "base", {
@@ -63,38 +75,38 @@ def build_doc_page(contents, doc) -> str:
         })
 
 
-def generate_contents(docs):
+def generate_contents(doc_set: DocSet):
     contents_docs = [{
         "title": doc.title,
         "url": f"{doc.name}.html"
-    } for doc in docs if doc.is_doc()]
+    } for doc in doc_set.docs if doc.is_doc()]
     return render_template("contents", {"docs": contents_docs})
 
 
-def walk_raw_docs() -> [[Document]]:
+def walk_raw_docs() -> [DocSet]:
     docs_by_dir = []
     for (root, _, filenames) in os.walk(RAW_DIR):
         dir_docs = []
+        dir_path = os.path.relpath(root, RAW_DIR).replace(".", "")
         for filename in filenames:
-            dirpath = os.path.relpath(root, RAW_DIR).replace(".", "")
             raw_path = os.path.join(root, filename)
 
-            doc = Document(filename, raw_path, dirpath)
+            doc = Doc(filename, raw_path, dir_path)
             if doc.is_doc():
                 with open(os.path.join(root, filename), 'r') as doc_file:
                     markdown = doc_file.read().strip()
                     doc.markdown = markdown
 
             dir_docs.append(doc)
-        docs_by_dir.append(dir_docs)
+        docs_by_dir.append(DocSet(dir_path, dir_docs))
 
     return docs_by_dir
 
 
-def generate_docs(raw_docs):
-    for directory in raw_docs:
-        contents = generate_contents(directory)
-        for doc in directory:
+def generate_docs(doc_sets: [DocSet]):
+    for doc_set in doc_sets:
+        contents = generate_contents(doc_set)
+        for doc in doc_set.docs:
             doc_dir_path = os.path.join(OUTPUT_DIR, doc.dir_path)
             if not os.path.exists(doc_dir_path):
                 os.makedirs(doc_dir_path)
@@ -113,12 +125,13 @@ def generate_docs(raw_docs):
                 shutil.copyfile(src, target)
 
 
-def generate_index(docs):
-    flat = [item for sublist in docs for item in sublist]
-    pages = [{
-        "title": doc.long_name,
-        "url": doc.dir_path + f"{doc.name}.html"
-    } for doc in flat if doc.is_doc()]
+def generate_index(doc_sets: [DocSet]):
+    pages = []
+    for doc_set in doc_sets:
+        pages.extend([{
+            "title": doc.long_name,
+            "url": doc_set.to_url() + f"{doc.name}.html"
+        } for doc in doc_set.docs if doc.is_doc()])
 
     index = render_template("contents", {"docs": pages})
 
