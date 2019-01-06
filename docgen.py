@@ -1,5 +1,6 @@
 import os
 import shutil
+from functools import reduce
 from markdown2 import Markdown
 import pystache
 
@@ -19,10 +20,10 @@ class Doc():
         (name, extension) = os.path.splitext(self.src_filename)
         self.name = name.replace(" ", "-").lower().strip()  # overview
         self.extension = extension.strip()  # .md
-        self.dir_path = dir_path.replace("\\", "/").strip()  # technical/tools
+        self.dir_path = dir_path if dir_path == "" else dir_path + "/"  # technical/tools/
 
         self.title = self.name.replace("-", " ").title()  # Overview
-        self.long_name = self.dir_path.replace("/", " ").title().replace(
+        self.long_name = dir_path.replace("/", " ").title().replace(
             " ", " / ") + " / " + self.title  # Technical / Tools / Overview
 
     def is_doc(self) -> bool:
@@ -31,14 +32,11 @@ class Doc():
 
 class DocSet():
     def __init__(self, dir_path: str, docs: [Doc]):
-        self.dir_path = dir_path
+        self.dir_path = dir_path  # technical/tools
         self.docs = docs
         self.doc_count = len(self.docs)
-
-    def to_url(self):
-        if self.dir_path != "":
-            return self.dir_path + "/"
-        return self.dir_path
+        self.long_name = dir_path.replace("/", " ").title().replace(
+            " ", " / ") + " / "  # Technical / Tools /
 
 
 def render_template(template, params) -> str:
@@ -75,11 +73,14 @@ def build_doc_page(contents: str, doc: Doc) -> str:
         })
 
 
-def generate_contents(doc_set: DocSet):
+def generate_contents(doc_set: DocSet, long_names=False):
     contents_docs = [{
-        "title": doc.title,
-        "url": f"{doc.name}.html"
+        "title":
+        doc.long_name if long_names else doc.title,
+        "url":
+        doc.dir_path + f"{doc.name}.html" if long_names else f"{doc.name}.html"
     } for doc in doc_set.docs if doc.is_doc()]
+
     return render_template("contents", {"docs": contents_docs})
 
 
@@ -87,18 +88,20 @@ def walk_raw_docs() -> [DocSet]:
     docs_by_dir = []
     for (root, _, filenames) in os.walk(RAW_DIR):
         dir_docs = []
-        dir_path = os.path.relpath(root, RAW_DIR).replace(".", "")
+        dir_path = os.path.relpath(root, RAW_DIR)
+        clean_dir_path = dir_path.replace(".", "").replace("\\", "/")
+
         for filename in filenames:
             raw_path = os.path.join(root, filename)
 
-            doc = Doc(filename, raw_path, dir_path)
+            doc = Doc(filename, raw_path, clean_dir_path)
             if doc.is_doc():
                 with open(os.path.join(root, filename), 'r') as doc_file:
                     markdown = doc_file.read().strip()
                     doc.markdown = markdown
 
             dir_docs.append(doc)
-        docs_by_dir.append(DocSet(dir_path, dir_docs))
+        docs_by_dir.append(DocSet(clean_dir_path, dir_docs))
 
     return docs_by_dir
 
@@ -106,11 +109,12 @@ def walk_raw_docs() -> [DocSet]:
 def generate_docs(doc_sets: [DocSet]):
     for doc_set in doc_sets:
         contents = generate_contents(doc_set)
-        for doc in doc_set.docs:
-            doc_dir_path = os.path.join(OUTPUT_DIR, doc.dir_path)
-            if not os.path.exists(doc_dir_path):
-                os.makedirs(doc_dir_path)
 
+        doc_dir_path = os.path.join(OUTPUT_DIR, doc_set.dir_path)
+        if not os.path.exists(doc_dir_path):
+            os.makedirs(doc_dir_path)
+
+        for doc in doc_set.docs:
             if doc.is_doc():
                 page = build_doc_page(contents, doc)
 
@@ -125,25 +129,29 @@ def generate_docs(doc_sets: [DocSet]):
                 shutil.copyfile(src, target)
 
 
-def generate_index(doc_sets: [DocSet]):
-    pages = []
-    for doc_set in doc_sets:
-        pages.extend([{
-            "title": doc.long_name,
-            "url": doc_set.to_url() + f"{doc.name}.html"
-        } for doc in doc_set.docs if doc.is_doc()])
+def write_index(contents: str, doc_set: DocSet):
+    output = render_template(
+        "base", {
+            "title": f"Index of {doc_set.long_name}",
+            "styles": styles,
+            "name": f"Index of {doc_set.long_name}",
+            "contents": contents
+        })
 
-    index = render_template("contents", {"docs": pages})
-
-    output = render_template("base", {
-        "title": "Index",
-        "styles": styles,
-        "name": "Index",
-        "content": index
-    })
-
-    with open(os.path.join(OUTPUT_DIR, "index.html"), 'w') as output_file:
+    index_path = os.path.join(OUTPUT_DIR, doc_set.dir_path, "index.html")
+    with open(index_path, 'w') as output_file:
         output_file.write(output)
+
+
+def generate_index(doc_sets: [DocSet]):
+    for doc_set in doc_sets:
+        contents = generate_contents(doc_set)
+        write_index(contents, doc_set)
+
+    all = [doc for doc_set in doc_sets for doc in doc_set.docs if doc.is_doc()]
+    all_doc_set = DocSet("", all)
+    contents = generate_contents(all_doc_set, True)
+    write_index(contents, all_doc_set)
 
 
 if __name__ == "__main__":
@@ -154,7 +162,8 @@ if __name__ == "__main__":
     print("Cleaned up output directory")
 
     raw_docs = walk_raw_docs()
-    print(f"Found {len(raw_docs)} files to generate")
+    total = reduce(lambda x, y: x + len(y.docs), raw_docs, 0)
+    print(f"Found {total} files to generate")
 
     generate_docs(raw_docs)
     generate_index(raw_docs)
