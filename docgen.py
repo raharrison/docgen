@@ -9,6 +9,8 @@ RAW_DIR = "raw"
 
 markdowner = Markdown(extras=["tables", "fenced-code-blocks"])
 
+templates = {}  # cache for templates
+
 
 class Document():
     def __init__(self, src_filename, src_path, dir_path):
@@ -27,10 +29,12 @@ class Document():
         return self.extension == ".md"
 
 
-def create_template(name):
-    with open(f"{TEMPLATE_DIR}/{name}", 'r') as template_file:
-        template = template_file.read().strip()
-        return template
+def render_template(template, params):
+    if not template in templates:
+        with open(f"{TEMPLATE_DIR}/{template}.html", 'r') as template_file:
+            templates[template] = template_file.read().strip()
+
+    return pystache.render(templates[template], params)
 
 
 def create_styles() -> str:
@@ -47,17 +51,16 @@ def cleanup():
         shutil.rmtree(OUTPUT_DIR)
 
 
-def build_doc_page(base, styles, contents, doc) -> str:
+def build_doc_page(styles, contents, doc) -> str:
     content = markdowner.convert(doc.markdown)
-    output = pystache.render(
-        base, {
+    return render_template(
+        "base", {
             "title": doc.title,
             "styles": styles,
             "name": doc.long_name,
             "contents": contents,
             "content": content
         })
-    return output
 
 
 def generate_contents(docs):
@@ -65,8 +68,7 @@ def generate_contents(docs):
         "title": doc.title,
         "url": f"{doc.name}.html"
     } for doc in docs if doc.is_doc()]
-    template = create_template("contents.html")
-    return pystache.render(template, {"docs": contents_docs})
+    return render_template("contents", {"docs": contents_docs})
 
 
 def walk_raw_docs() -> [[Document]]:
@@ -90,7 +92,6 @@ def walk_raw_docs() -> [[Document]]:
 
 
 def generate_docs(raw_docs):
-    base = create_template("base.html")
     styles = create_styles()
 
     for directory in raw_docs:
@@ -101,7 +102,7 @@ def generate_docs(raw_docs):
                 os.makedirs(doc_dir_path)
 
             if doc.is_doc():
-                page = build_doc_page(base, styles, contents, doc)
+                page = build_doc_page(styles, contents, doc)
 
                 doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
 
@@ -115,19 +116,17 @@ def generate_docs(raw_docs):
 
 
 def generate_index(docs):
-    index_template = create_template("contents.html")
     flat = [item for sublist in docs for item in sublist]
     pages = [{
         "title": doc.long_name,
         "url": doc.dir_path + "/" + f"{doc.name}.html"
     } for doc in flat if doc.is_doc()]
 
-    index = pystache.render(index_template, {"docs": pages})
+    index = render_template("contents", {"docs": pages})
 
-    base = create_template("base.html")
     styles = create_styles()
 
-    output = pystache.render(base, {
+    output = render_template("base", {
         "title": "Index",
         "styles": styles,
         "name": "Index",
