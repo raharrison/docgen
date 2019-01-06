@@ -1,14 +1,13 @@
 import os
 import shutil
 from markdown2 import Markdown
-from pybars import Compiler
+import pystache
 
 TEMPLATE_DIR = "template"
 OUTPUT_DIR = "docs"
 RAW_DIR = "raw"
 
 markdowner = Markdown(extras=["tables", "fenced-code-blocks"])
-compiler = Compiler()
 
 
 class Document():
@@ -31,7 +30,7 @@ class Document():
 def create_template(name):
     with open(f"{TEMPLATE_DIR}/{name}", 'r') as template_file:
         template = template_file.read().strip()
-        return compiler.compile(template)
+        return template
 
 
 def create_styles() -> str:
@@ -50,13 +49,14 @@ def cleanup():
 
 def build_doc_page(base, styles, contents, doc) -> str:
     content = markdowner.convert(doc.markdown)
-    output = base({
-        "title": doc.title,
-        "styles": styles,
-        "name": doc.long_name,
-        "contents": contents,
-        "content": content
-    })
+    output = pystache.render(
+        base, {
+            "title": doc.title,
+            "styles": styles,
+            "name": doc.long_name,
+            "contents": contents,
+            "content": content
+        })
     return output
 
 
@@ -66,7 +66,7 @@ def generate_contents(docs):
         "url": f"{doc.name}.html"
     } for doc in docs if doc.is_doc()]
     template = create_template("contents.html")
-    return template({"docs": contents_docs})
+    return pystache.render(template, {"docs": contents_docs})
 
 
 def walk_raw_docs() -> [[Document]]:
@@ -122,12 +122,12 @@ def generate_index(docs):
         "url": doc.dir_path + "/" + f"{doc.name}.html"
     } for doc in flat if doc.is_doc()]
 
-    index = index_template({"docs": pages})
+    index = pystache.render(index_template, {"docs": pages})
 
     base = create_template("base.html")
     styles = create_styles()
 
-    output = base({
+    output = pystache.render(base, {
         "title": "Index",
         "styles": styles,
         "name": "Index",
