@@ -29,7 +29,7 @@ class Document():
         return self.extension == ".md"
 
 
-def render_template(template, params):
+def render_template(template, params) -> str:
     if not template in templates:
         with open(f"{TEMPLATE_DIR}/{template}.html", 'r') as template_file:
             templates[template] = template_file.read().strip()
@@ -51,7 +51,7 @@ def cleanup():
         shutil.rmtree(OUTPUT_DIR)
 
 
-def build_doc_page(styles, contents, doc) -> str:
+def build_doc_page(contents, doc) -> str:
     content = markdowner.convert(doc.markdown)
     return render_template(
         "base", {
@@ -92,8 +92,6 @@ def walk_raw_docs() -> [[Document]]:
 
 
 def generate_docs(raw_docs):
-    styles = create_styles()
-
     for directory in raw_docs:
         contents = generate_contents(directory)
         for doc in directory:
@@ -102,7 +100,7 @@ def generate_docs(raw_docs):
                 os.makedirs(doc_dir_path)
 
             if doc.is_doc():
-                page = build_doc_page(styles, contents, doc)
+                page = build_doc_page(contents, doc)
 
                 doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
 
@@ -119,12 +117,10 @@ def generate_index(docs):
     flat = [item for sublist in docs for item in sublist]
     pages = [{
         "title": doc.long_name,
-        "url": doc.dir_path + "/" + f"{doc.name}.html"
+        "url": doc.dir_path + f"{doc.name}.html"
     } for doc in flat if doc.is_doc()]
 
     index = render_template("contents", {"docs": pages})
-
-    styles = create_styles()
 
     output = render_template("base", {
         "title": "Index",
@@ -138,6 +134,8 @@ def generate_index(docs):
 
 
 if __name__ == "__main__":
+
+    styles = create_styles()
 
     cleanup()
     print("Cleaned up output directory")
