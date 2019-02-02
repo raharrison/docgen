@@ -73,15 +73,22 @@ def build_doc_page(contents: str, doc: Doc) -> str:
         })
 
 
-def generate_contents(doc_set: DocSet, long_names=False):
+def generate_contents(doc_set: DocSet, current_page=None, long_names=False):
+    current_page_index = {"title": f"Index", "url": "index.html"}
     contents_docs = [{
         "title":
         doc.long_name if long_names else doc.title,
         "url":
         doc.dir_path + f"{doc.name}.html" if long_names else f"{doc.name}.html"
-    } for doc in doc_set.docs if doc.is_doc()]
+    } for doc in doc_set.docs if doc.is_doc() and doc != current_page]
 
-    return render_template("contents", {"docs": contents_docs})
+    # not generating contents for an index page
+    if current_page != None:
+        elements = [current_page_index] + contents_docs
+    else:
+        elements = contents_docs
+
+    return render_template("contents", {"docs": elements})
 
 
 def walk_raw_docs() -> [DocSet]:
@@ -108,7 +115,6 @@ def walk_raw_docs() -> [DocSet]:
 
 def generate_docs(doc_sets: [DocSet]):
     for doc_set in doc_sets:
-        contents = generate_contents(doc_set)
 
         doc_dir_path = os.path.join(OUTPUT_DIR, doc_set.dir_path)
         if not os.path.exists(doc_dir_path):
@@ -116,6 +122,7 @@ def generate_docs(doc_sets: [DocSet]):
 
         for doc in doc_set.docs:
             if doc.is_doc():
+                contents = generate_contents(doc_set, current_page=doc)
                 page = build_doc_page(contents, doc)
 
                 doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
@@ -143,14 +150,14 @@ def write_index(contents: str, doc_set: DocSet):
         output_file.write(output)
 
 
-def generate_index(doc_sets: [DocSet]):
+def generate_indexes(doc_sets: [DocSet]):
     for doc_set in doc_sets:
         contents = generate_contents(doc_set)
         write_index(contents, doc_set)
 
     all = [doc for doc_set in doc_sets for doc in doc_set.docs if doc.is_doc()]
     all_doc_set = DocSet("", all)
-    contents = generate_contents(all_doc_set, True)
+    contents = generate_contents(all_doc_set, long_names=True)
     write_index(contents, all_doc_set)
 
 
@@ -166,5 +173,5 @@ if __name__ == "__main__":
     print(f"Found {total} files to generate")
 
     generate_docs(raw_docs)
-    generate_index(raw_docs)
+    generate_indexes(raw_docs)
     print("All documents generated")
