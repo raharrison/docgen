@@ -74,7 +74,7 @@ def build_doc_page(contents: str, doc: Doc) -> str:
 
 
 def generate_contents(doc_set: DocSet, current_page=None, long_names=False):
-    current_page_index = {"title": f"Index", "url": "index.html"}
+    # each doc in current set
     contents_docs = [{
         "title":
         doc.long_name if long_names else doc.title,
@@ -82,13 +82,22 @@ def generate_contents(doc_set: DocSet, current_page=None, long_names=False):
         doc.dir_path + f"{doc.name}.html" if long_names else f"{doc.name}.html"
     } for doc in doc_set.docs if doc.is_doc() and doc != current_page]
 
-    # not generating contents for an index page
-    if current_page != None:
-        elements = [current_page_index] + contents_docs
-    else:
-        elements = contents_docs
+    # index up one level
+    if doc_set.dir_path != "":
+        up_one_index = {"title": f"Index of up", "url": "../index.html"}
+        contents_docs.append(up_one_index)
 
-    return render_template("contents", {"docs": elements})
+    # index of root
+    if doc_set.dir_path == "":
+        root_index = ""
+    else:
+        root_index = "../" * len(doc_set.dir_path.split("/"))
+    contents_docs.append({
+        "title": f"Index of /",
+        "url": root_index + "index.html"
+    })
+
+    return render_template("contents", {"docs": contents_docs})
 
 
 def walk_raw_docs() -> [DocSet]:
