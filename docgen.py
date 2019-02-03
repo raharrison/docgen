@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from functools import reduce
 from markdown2 import Markdown
@@ -8,7 +9,13 @@ TEMPLATE_DIR = "template"
 OUTPUT_DIR = "docs"
 RAW_DIR = "raw"
 
-markdowner = Markdown(extras=["tables", "fenced-code-blocks"])
+link_patterns = [(re.compile(
+    r'<?(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)>?'
+), r'\1')]
+
+markdowner = Markdown(
+    extras=["tables", "fenced-code-blocks", "link-patterns"],
+    link_patterns=link_patterns)
 
 templates = {}  # cache for templates
 
