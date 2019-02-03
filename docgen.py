@@ -162,6 +162,20 @@ def walk_raw_docs() -> [DocSet]:
     return docs_by_dir
 
 
+def create_all_doc(raw_docs: [DocSet]):
+    all = [doc for doc_set in raw_docs for doc in doc_set.docs if doc.is_doc()]
+    combined_content = "\n\n---\n\n".join(
+        [f"# {doc.long_name}\n\n{doc.markdown}" for doc in all])
+    all_doc = Doc("all.md", f"{RAW_DIR}/all.md", "")
+    all_doc.markdown = combined_content
+
+    # if no root doc set create one
+    if raw_docs[0].dir_path == "":
+        raw_docs[0].docs.insert(0, all_doc)
+    else:
+        raw_docs.insert(0, DocSet("", [all_doc]))
+
+
 def generate_docs(doc_sets: [DocSet]):
     for doc_set in doc_sets:
 
@@ -219,6 +233,11 @@ if __name__ == "__main__":
     print("Cleaned up output directory")
 
     raw_docs = walk_raw_docs()
+    if len(raw_docs) == 0:
+        print("No docs found to generate")
+        exit(1)
+
+    create_all_doc(raw_docs)
     total = reduce(lambda x, y: x + len(y.docs), raw_docs, 0)
     print(f"Found {total} files to generate")
 
