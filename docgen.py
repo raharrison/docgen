@@ -133,7 +133,8 @@ def generate_contents(doc_set: DocSet,
             "has_nav": len(navigation) > 0,
             "navigation": navigation,
             "has_docs": len(docs) > 0,
-            "docs": docs
+            "docs": docs,
+            "current_path": doc_set.long_name
         })
 
 
