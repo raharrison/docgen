@@ -712,3 +712,11 @@
 .markdown-body hr {
   border-bottom-color: #eee;
 }
+
+.navigation li {
+  list-style: none;
+}
+
+.navigation ul {
+  padding-left: 0;
+}

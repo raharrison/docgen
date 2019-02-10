@@ -1,7 +1,25 @@
-<ul>
-  {{#docs}}
-  <li>
-    <a href="{{ url }}">{{ title }}</a>
-  </li>
-  {{/docs}}
-</ul>
+{{#has_nav}}
+<div class="navigation">
+  <h4>Navigation:</h4>
+  <ul>
+    {{#navigation}}
+    <li>
+      <a href="{{ url }}">{{ title }}</a>
+    </li>
+    {{/navigation}}
+  </ul>
+</div>
+{{/has_nav}}
+
+{{#has_docs}}
+<div class="documents">
+  <h4>Documents:</h4>
+  <ul>
+    {{#docs}}
+    <li>
+      <a href="{{ url }}">{{ title }}</a>
+    </li>
+    {{/docs}}
+  </ul>
+</div>
+{{/has_docs}}

@@ -84,8 +84,12 @@ def generate_contents(doc_set: DocSet,
                       all_sets: [DocSet],
                       current_page: DocSet = None,
                       long_names: bool = False):
+
+    navigation = []
+    docs = []
+
     # each doc in current set
-    contents_docs = [{
+    docs = [{
         "title":
         doc.long_name if long_names else doc.title,
         "url":
@@ -99,8 +103,8 @@ def generate_contents(doc_set: DocSet,
         root_index = "../" * len(doc_set.dir_path.split("/"))
     # don't add for root index page
     if current_page != None or doc_set.dir_path != "":
-        contents_docs.append({
-            "title": f"Root Index of /",
+        navigation.append({
+            "title": f"← Index of /",
             "url": root_index + "index.html"
         })
 
@@ -109,22 +113,28 @@ def generate_contents(doc_set: DocSet,
     # index up one level
     if upstream != None and doc_set.dir_path != "":
         up_one_index = {
-            "title": f"Upstream: Index of {upstream.long_name}",
+            "title": f"↑ Index of {upstream.long_name}",
             "url": "../index.html"
         }
-        contents_docs.append(up_one_index)
+        navigation.append(up_one_index)
 
     # downstream sets
     for down_stream_set in downstream:
-        contents_docs.append({
+        navigation.append({
             "title":
-            f"Downstream: Index of {down_stream_set.long_name}",
+            f"↓ Index of {down_stream_set.long_name}",
             "url":
             down_stream_set.dir_path.replace(doc_set.dir_path + "/", "") +
             "/index.html"
         })
 
-    return render_template("contents", {"docs": contents_docs})
+    return render_template(
+        "contents", {
+            "has_nav": len(navigation) > 0,
+            "navigation": navigation,
+            "has_docs": len(docs) > 0,
+            "docs": docs
+        })
 
 
 def find_relative_docsets(doc_set: DocSet,
@@ -144,6 +154,8 @@ def find_relative_docsets(doc_set: DocSet,
     upstream_path = "/".join(doc_set.dir_path.split("/")[:-1])
     upstream_doc_set = next(
         docset for docset in all_sets if docset.dir_path == upstream_path)
+    if upstream_doc_set.dir_path == "":
+        upstream_doc_set = None
     return (upstream_doc_set, downstream)
 
 
@@ -198,7 +210,7 @@ def generate_docs(doc_sets: [DocSet]):
 
                 doc_path = os.path.join(doc_dir_path, f"{doc.name}.html")
 
-                with open(doc_path, 'w') as output_file:
+                with open(doc_path, 'w', encoding="utf-8") as output_file:
                     output_file.write(page)
             else:
                 # raw file copy
@@ -217,7 +229,7 @@ def write_index(contents: str, doc_set: DocSet):
         })
 
     index_path = os.path.join(OUTPUT_DIR, doc_set.dir_path, "index.html")
-    with open(index_path, 'w') as output_file:
+    with open(index_path, 'w', encoding="utf-8") as output_file:
         output_file.write(output)
 
 
