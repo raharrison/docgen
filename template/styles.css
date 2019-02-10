@@ -720,3 +720,17 @@
 .navigation ul {
   padding-left: 0;
 }
+
+.navigation {
+  float: left;
+  width: 50%;
+}
+
+.documents {
+  float: right;
+  width: 50%;
+}
+
+.main-content {
+  clear: both;
+}
